@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azərbaycan Məktəbləri Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+        .year-selector {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        select {
+            padding: 12px 30px;
+            font-size: 18px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            color: #333;
+            font-weight: 600;
+        }
+        select:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            color: white;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-title {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        .card-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .card-percentage {
+            font-size: 18px;
+            opacity: 0.95;
+            padding: 10px 0;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            margin-bottom: 10px;
+        }
+        .card-growth {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .chart-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .arrow-up { color: #4ade80; }
+        .arrow-down { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏫 Azərbaycanda Kompüterli Məktəblər</h1>
+            <p class="subtitle">2015-2024 İlləri Arası Statistika və Analiz Dashboard</p>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="year-selector">
+            <label style="font-size: 18px; font-weight: 600; margin-right: 15px; color: #333;">📅 İl Seçin:</label>
+            <select id="yearSelect" onchange="updateDashboard()">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+                <option value="2017">2017</option>
+                <option value="2016">2016</option>
+                <option value="2015">2015</option>
+            </select>
+        </div>
+
+        <!-- Cards -->
+        <div class="cards">
+            <div class="card">
+                <div class="card-title">Ümumi Say</div>
+                <div class="card-value" id="totalValue">4352</div>
+                <div class="card-percentage">Ümumi nisbət: <strong>100%</strong></div>
+                <div class="card-growth" id="totalGrowth">
+                    <span>↓</span>
+                    <span>-1.0% keçən ilə görə</span>
+                </div>
+            </div>
+
+            <div class="card green">
+                <div class="card-title">Şəhər Məktəbləri</div>
+                <div class="card-value" id="cityValue">1257</div>
+                <div class="card-percentage">Ümumi nisbət: <strong id="cityPercent">28.9%</strong></div>
+                <div class="card-growth" id="cityGrowth">
+                    <span>↑</span>
+                    <span>+0.6% keçən ilə görə</span>
+                </div>
+            </div>
+
+            <div class="card orange">
+                <div class="card-title">Kənd Məktəbləri</div>
+                <div class="card-value" id="villageValue">3095</div>
+                <div class="card-percentage">Ümumi nisbət: <strong id="villagePercent">71.1%</strong></div>
+                <div class="card-growth" id="villageGrowth">
+                    <span>↓</span>
+                    <span>-1.6% keçən ilə görə</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="chart-container">
+            <div class="chart-title">📈 İllər Üzrə Dinamika (2015-2024)</div>
+            <div id="trendChart"></div>
+        </div>
+
+        <!-- Stacked Bar Chart -->
+        <div class="chart-container">
+            <div class="chart-title">📊 Şəhər və Kənd Məktəblərinin Müqayisəsi</div>
+            <div id="stackedChart"></div>
+        </div>
+
+        <!-- Regional Chart -->
+        <div class="chart-container">
+            <div class="chart-title">🗺️ Regionlar Üzrə Bölgü (<span id="regionYear">2024</span>)</div>
+            <div id="regionalChart"></div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="chart-container">
+            <div class="chart-title">🔥 İstilik Xəritəsi - Region və İl Üzrə</div>
+            <div id="heatmapChart"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const data = [
+            { year: 2015, total: 4161, city: 1146, village: 3015, baku: 339, lankaran: 352, qarabag: 0, quba: 356, sheki: 362, merkezi: 534, qazax: 0, sherqi: 0, ganca: 256, milmugan: 0, dagliq: 218, naxcivan: 216, shirvan: 0, abseron: 101 },
+            { year: 2016, total: 4158, city: 1125, village: 3033, baku: 335, lankaran: 355, qarabag: 0, quba: 355, sheki: 361, merkezi: 533, qazax: 0, sherqi: 0, ganca: 256, milmugan: 0, dagliq: 232, naxcivan: 216, shirvan: 0, abseron: 103 },
+            { year: 2017, total: 4189, city: 1160, village: 3029, baku: 360, lankaran: 528, qarabag: 0, quba: 356, sheki: 358, merkezi: 0, qazax: 0, sherqi: 0, ganca: 256, milmugan: 0, dagliq: 234, naxcivan: 215, shirvan: 0, abseron: 106 },
+            { year: 2018, total: 4212, city: 1161, village: 3051, baku: 362, lankaran: 538, qarabag: 417, quba: 357, sheki: 360, merkezi: 337, qazax: 308, sherqi: 285, ganca: 256, milmugan: 246, dagliq: 236, naxcivan: 215, shirvan: 187, abseron: 108 },
+            { year: 2019, total: 4277, city: 1171, village: 3106, baku: 366, lankaran: 541, qarabag: 422, quba: 370, sheki: 360, merkezi: 349, qazax: 321, sherqi: 298, ganca: 256, milmugan: 248, dagliq: 238, naxcivan: 212, shirvan: 187, abseron: 109 },
+            { year: 2020, total: 4335, city: 1184, village: 3151, baku: 368, lankaran: 541, qarabag: 443, quba: 404, sheki: 360, merkezi: 350, qazax: 322, sherqi: 299, ganca: 255, milmugan: 248, dagliq: 239, naxcivan: 211, shirvan: 187, abseron: 108 },
+            { year: 2021, total: 4356, city: 1243, village: 3113, baku: 369, lankaran: 543, qarabag: 443, quba: 407, sheki: 365, merkezi: 351, qazax: 326, sherqi: 300, ganca: 256, milmugan: 248, dagliq: 239, naxcivan: 211, shirvan: 190, abseron: 108 },
+            { year: 2022, total: 4381, city: 1254, village: 3127, baku: 372, lankaran: 546, qarabag: 444, quba: 417, sheki: 363, merkezi: 351, qazax: 326, sherqi: 309, ganca: 256, milmugan: 247, dagliq: 239, naxcivan: 212, shirvan: 191, abseron: 108 },
+            { year: 2023, total: 4394, city: 1250, village: 3144, baku: 377, lankaran: 551, qarabag: 447, quba: 417, sheki: 364, merkezi: 350, qazax: 325, sherqi: 309, ganca: 257, milmugan: 248, dagliq: 236, naxcivan: 212, shirvan: 190, abseron: 111 },
+            { year: 2024, total: 4352, city: 1257, village: 3095, baku: 387, lankaran: 542, qarabag: 442, quba: 409, sheki: 358, merkezi: 345, qazax: 320, sherqi: 307, ganca: 257, milmugan: 249, dagliq: 227, naxcivan: 213, shirvan: 185, abseron: 111 }
+        ];
+
+        const regions = {
+            baku: 'Bakı', lankaran: 'Lənkəran-Astara', qarabag: 'Qarabağ',
+            quba: 'Quba-Xaçmaz', sheki: 'Şəki-Zaqatala', merkezi: 'Mərkəzi-Aran',
+            qazax: 'Qazax-Tovuz', sherqi: 'Şərqi Zəngəzur', ganca: 'Gəncə-Daşkəsən',
+            milmugan: 'Mil-Muğan', dagliq: 'Dağlıq Şirvan', naxcivan: 'Naxçıvan MR',
+            shirvan: 'Şirvan-Salyan', abseron: 'Abşeron-Xızı'
+        };
+
+        function updateDashboard() {
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const yearData = data.find(d => d.year === year);
+            const prevYearData = data.find(d => d.year === year - 1);
+
+            // Update cards
+            document.getElementById('totalValue').textContent = yearData.total;
+            document.getElementById('cityValue').textContent = yearData.city;
+            document.getElementById('villageValue').textContent = yearData.village;
+
+            const cityPercent = ((yearData.city / yearData.total) * 100).toFixed(1);
+            const villagePercent = ((yearData.village / yearData.total) * 100).toFixed(1);
+            document.getElementById('cityPercent').textContent = cityPercent + '%';
+            document.getElementById('villagePercent').textContent = villagePercent + '%';
+
+            if (prevYearData) {
+                const totalGrowth = (((yearData.total - prevYearData.total) / prevYearData.total) * 100).toFixed(1);
+                const cityGrowth = (((yearData.city - prevYearData.city) / prevYearData.city) * 100).toFixed(1);
+                const villageGrowth = (((yearData.village - prevYearData.village) / prevYearData.village) * 100).toFixed(1);
+
+                document.getElementById('totalGrowth').innerHTML = 
+                    `<span>${totalGrowth >= 0 ? '↑' : '↓'}</span><span>${totalGrowth >= 0 ? '+' : ''}${totalGrowth}% keçən ilə görə</span>`;
+                document.getElementById('cityGrowth').innerHTML = 
+                    `<span>${cityGrowth >= 0 ? '↑' : '↓'}</span><span>${cityGrowth >= 0 ? '+' : ''}${cityGrowth}% keçən ilə görə</span>`;
+                document.getElementById('villageGrowth').innerHTML = 
+                    `<span>${villageGrowth >= 0 ? '↑' : '↓'}</span><span>${villageGrowth >= 0 ? '+' : ''}${villageGrowth}% keçən ilə görə</span>`;
+            }
+
+            document.getElementById('regionYear').textContent = year;
+            updateCharts(year);
+        }
+
+        function updateCharts(selectedYear) {
+            // Trend Chart
+            const trendTrace1 = {
+                x: data.map(d => d.year),
+                y: data.map(d => d.total),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Ümumi',
+                line: { color: '#3B82F6', width: 3 },
+                marker: { size: 8 }
+            };
+
+            const trendTrace2 = {
+                x: data.map(d => d.year),
+                y: data.map(d => d.city),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Şəhər',
+                line: { color: '#10B981', width: 2 },
+                marker: { size: 6 }
+            };
+
+            const trendTrace3 = {
+                x: data.map(d => d.year),
+                y: data.map(d => d.village),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Kənd',
+                line: { color: '#F59E0B', width: 2 },
+                marker: { size: 6 }
+            };
+
+            Plotly.newPlot('trendChart', [trendTrace1, trendTrace2, trendTrace3], {
+                height: 400,
+                margin: { l: 50, r: 50, t: 30, b: 50 },
+                xaxis: { title: 'İl' },
+                yaxis: { title: 'Məktəb Sayı' }
+            });
+
+            // Stacked Bar
+            const stackTrace1 = {
+                x: data.map(d => d.year),
+                y: data.map(d => d.city),
+                type: 'bar',
+                name: 'Şəhər',
+                marker: { color: '#10B981' }
+            };
+
+            const stackTrace2 = {
+                x: data.map(d => d.year),
+                y: data.map(d => d.village),
+                type: 'bar',
+                name: 'Kənd',
+                marker: { color: '#F59E0B' }
+            };
+
+            Plotly.newPlot('stackedChart', [stackTrace1, stackTrace2], {
+                height: 400,
+                barmode: 'stack',
+                margin: { l: 50, r: 50, t: 30, b: 50 },
+                xaxis: { title: 'İl' },
+                yaxis: { title: 'Məktəb Sayı' }
+            });
+
+            // Regional Chart
+            const yearData = data.find(d => d.year === selectedYear);
+            const regionData = Object.keys(regions).map(key => ({
+                name: regions[key],
+                value: yearData[key]
+            })).sort((a, b) => b.value - a.value);
+
+            const regionalTrace = {
+                x: regionData.map(d => d.value),
+                y: regionData.map(d => d.name),
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: regionData.map(d => 
+                        d.value > 500 ? '#EF4444' :
+                        d.value > 350 ? '#F59E0B' :
+                        d.value > 250 ? '#10B981' : '#3B82F6'
+                    )
+                },
+                text: regionData.map(d => d.value),
+                textposition: 'auto'
+            };
+
+            Plotly.newPlot('regionalChart', [regionalTrace], {
+                height: 500,
+                margin: { l: 150, r: 50, t: 30, b: 50 },
+                xaxis: { title: 'Məktəb Sayı' },
+                showlegend: false
+            });
+
+            // Heatmap
+            const regionKeys = Object.keys(regions);
+            const heatmapData = regionKeys.map(key => data.map(d => d[key]));
+            
+            const heatmapTrace = {
+                z: heatmapData,
+                x: data.map(d => d.year),
+                y: regionKeys.map(k => regions[k]),
+                type: 'heatmap',
+                colorscale: 'RdYlBu',
+                reversescale: true,
+                colorbar: { title: 'Sayı' }
+            };
+
+            Plotly.newPlot('heatmapChart', [heatmapTrace], {
+                height: 600,
+                margin: { l: 150, r: 50, t: 30, b: 50 },
+                xaxis: { title: 'İl' }
+            });
+        }
+
+        // Initialize
+        updateDashboard();
+    </script>
+</body>
+</html>
